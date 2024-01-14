@@ -1,0 +1,28 @@
+# Performs various checks on code
+# To signal that this is a yml file
+---
+name: Checks
+# Trigger on git push
+on: [push]
+
+# Adding list of jobs to run when code is pushed to git
+jobs:
+  # ID of job (to be referenced in github actions)
+  test-lint:
+    # Human readable name, seen on github actions interface
+    name: Test and Lint
+    # Runner, OS we will be running our job on (ubuntu is a basic OS to get the job done)
+    runs-on: ubuntu-20.04
+    # Steps - different things that run for the job
+    steps:
+      - name: Login to Docker Hub
+        users: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Test
+        run: docker-compose run --rm app sh -c "python manage.py test"
+      - name: Lint
+        run: docker-compose run --rm app sh -c "flake8"
