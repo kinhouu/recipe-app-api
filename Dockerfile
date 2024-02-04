@@ -25,16 +25,24 @@ ARG DEV=false
 RUN python -m venv /py && \
     # Block 2: Upgrade python package manager in VE
     /py/bin/pip install --upgrade pip && \
-    # Block 3: Install requirements in requirements.txt
+    # Block 3: Installing package: Postgresql client (for psycopg2 to connect to postgres)
+    apk add --update --no-cache postgresql-client && \
+    # Block 4: Sets a virtual dependency (groups dependencies we installed into 'tmp-build-deps' for easier removal)
+    apk add --update --no-cache --virtual .tmp-build-deps \
+        # Specifies psycopg2 dependencies to be installed
+        build-base postgresql-dev musl-dev && \
+    # Block 5: Install requirements in requirements.txt
     /py/bin/pip install -r /tmp/requirements.txt && \
     # Shell code (bash script) - that installs requirements.dev.txt if in development mode 
     # /py/bin/pip install -r /tmp/requirements.dev.txt && \
     if [ $DEV = "true" ]; \
         then /py/bin/pip install -r /tmp/requirements.dev.txt ; \
     fi && \
-    # Block 4: Remove tmp directory, get rid of extra dependencies once image is created (best practice to keep docker images lightweight)
+    # Block 6: Remove tmp directory, get rid of extra dependencies once image is created (best practice to keep docker images lightweight)
     rm -rf /tmp && \
-    # Block 5: Add new user in image, best practice not to use root user (if app is compromised, attacker may have full access to container)
+    # Block 7: Remove 'tmp-build-des' (installation dependencies)
+    apk del .tmp-build-deps && \
+    # Block 8: Add new user in image, best practice not to use root user (if app is compromised, attacker may have full access to container)
     adduser \
         # Prevent others from logging into container using password, only by default when running the app
         --disabled-password \
